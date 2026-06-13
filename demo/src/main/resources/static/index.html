@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI 情緒日記</title>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; max-width: 600px; margin: 40px auto; padding: 20px; background-color: #f9f9f9; }
+        h1 { color: #333; text-align: center; }
+        textarea { width: 100%; height: 120px; padding: 10px; box-sizing: border-box; border: 1px solid #ccc; border-radius: 8px; resize: none; font-size: 16px; }
+        button { margin-top: 10px; width: 100%; padding: 12px; background-color: #4CAF50; color: white; border: none; border-radius: 8px; font-size: 16px; cursor: pointer; transition: 0.3s; }
+        button:hover { background-color: #45a049; }
+        .diary-card { background: white; border: 1px solid #eee; padding: 15px; margin-top: 15px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
+        .sentiment { font-weight: bold; color: #ff9800; background: #fff3e0; padding: 3px 8px; border-radius: 12px; font-size: 14px; }
+        .time { color: #888; font-size: 12px; float: right; }
+    </style>
+</head>
+<body>
+
+    <h1>📖 我的 AI 情緒日記</h1>
+    
+    <textarea id="content" placeholder="今天過得如何呢？寫下來吧..."></textarea>
+    <button onclick="submitDiary()">送出日記</button>
+
+    <h2>📜 歷史紀錄</h2>
+    <div id="diary-list"></div>
+
+    <script>
+        // 網頁一載入，就去呼叫後端 GET API 抓取歷史日記
+        window.onload = function() {
+            fetchDiaries();
+        };
+
+        // 【讀取】呼叫 GET /api/diaries
+        function fetchDiaries() {
+            fetch('/api/diaries')
+                .then(response => response.json())
+                .then(data => {
+                    const list = document.getElementById('diary-list');
+                    list.innerHTML = ''; // 清空畫面
+                    data.forEach(diary => {
+                        list.innerHTML += `
+                            <div class="diary-card">
+                                <p>${diary.content}</p>
+                                <div>
+                                  <span class="sentiment">情緒：${diary.sentiment || '等待 AI 分析...'}</span>
+                                  <span class="time">${new Date(diary.createdAt).toLocaleString()}</span>
+                                </div>
+                            </div>
+                        `;
+                    });
+                })
+                .catch(error => console.error('讀取失敗:', error));
+        }
+
+        // 【新增】呼叫 POST /api/diaries
+        function submitDiary() {
+            const contentInput = document.getElementById('content');
+            if (!contentInput.value) {
+                alert('請先輸入日記內容！');
+                return;
+            }
+
+            fetch('/api/diaries', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ content: contentInput.value }) // 將輸入的文字轉成 JSON 傳給後端
+            })
+            .then(response => response.json())
+            .then(data => {
+                contentInput.value = ''; // 清空輸入框
+                fetchDiaries(); // 重新抓取最新清單，更新畫面
+            })
+            .catch(error => console.error('新增失敗:', error));
+        }
+    </script>
+</body>
+</html>
